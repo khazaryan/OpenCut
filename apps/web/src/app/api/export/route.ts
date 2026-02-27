@@ -2,9 +2,7 @@ import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { ExportConfigSchema } from "@opencut/export-config";
-
-const MEDIA_BASE_PATH = process.env.MEDIA_BASE_PATH || path.resolve(process.cwd(), "../../apps/export-processor/data");
-const EXPORTS_DIR = path.join(MEDIA_BASE_PATH, "exports");
+import { EXPORTS_DIR, SOURCES_DIR, MEDIA_BASE_PATH } from "@/lib/export-paths";
 
 export async function POST(request: Request) {
 	try {
@@ -22,12 +20,10 @@ export async function POST(request: Request) {
 		const config = result.data;
 
 		// Verify sources exist
-		const sourcesDir = path.join(MEDIA_BASE_PATH, "sources");
 		for (const source of config.sources) {
-			// If filePath is absolute, use it directly; otherwise resolve against sources dir
 			const absPath = path.isAbsolute(source.filePath)
 				? source.filePath
-				: path.join(sourcesDir, source.filePath);
+				: path.join(SOURCES_DIR, source.filePath);
 			try {
 				await fs.access(absPath);
 			} catch {

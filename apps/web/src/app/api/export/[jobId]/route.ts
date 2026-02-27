@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
 import path from "node:path";
-
-const MEDIA_BASE_PATH = process.env.MEDIA_BASE_PATH || path.resolve(process.cwd(), "../../apps/export-processor/data");
-const EXPORTS_DIR = path.join(MEDIA_BASE_PATH, "exports");
+import { EXPORTS_DIR } from "@/lib/export-paths";
 
 export async function DELETE(
 	_request: Request,
