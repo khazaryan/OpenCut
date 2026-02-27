@@ -10,3 +10,4 @@ Track patterns from corrections to avoid repeating mistakes.
 - **Browser can't handle large video file processing** — 15GB 4K files crash the browser tab. Don't try to decode/encode large files client-side. Use backend FFmpeg for heavy processing.
 - **Plan before implementing architectural changes** — the backend export attempt started without a clear plan, leading to reverted code. Always plan first for non-trivial tasks.
 - **Always update tasks/todo.md and tasks/lessons.md after each phase** — per workflow instructions, mark items done as you go, write the Review section when done, and capture lessons immediately. Don't wait until asked.
+- **Use relative filenames in config, resolve server-side** — in a monorepo, each app has a different `cwd`. Don't put paths in the config JSON; use plain filenames and resolve them against `MEDIA_BASE_PATH` on the server. This makes the config portable across local dev, Docker, and S3.
