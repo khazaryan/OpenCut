@@ -389,7 +389,7 @@ export class MulticamManager {
 		clipId,
 		format = "mp4",
 		includeAudio = true,
-		mediaBasePath = "/data/media/sources",
+		mediaBasePath = "",
 	}: {
 		clipId?: string;
 		format?: "mp4" | "webm";
@@ -412,7 +412,9 @@ export class MulticamManager {
 			return {
 				id: angle.mediaId,
 				name: angle.name,
-				filePath: `${mediaBasePath}/${asset?.name ?? angle.mediaId}`,
+				filePath: mediaBasePath
+				? `${mediaBasePath}/${asset?.name ?? angle.mediaId}`
+				: asset?.name ?? angle.mediaId,
 				width: asset?.width,
 				height: asset?.height,
 				duration: asset?.duration,
@@ -468,7 +470,7 @@ export class MulticamManager {
 			sources,
 			segments,
 			output: {
-				filePath: `/data/media/exports/${exportId}/output.${format}`,
+				filePath: `exports/${exportId}/output.${format}`,
 				format,
 				width: outputWidth,
 				height: outputHeight,

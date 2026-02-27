@@ -3,7 +3,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { ExportConfigSchema } from "@opencut/export-config";
 
-const MEDIA_BASE_PATH = process.env.MEDIA_BASE_PATH || "/data/media";
+const MEDIA_BASE_PATH = process.env.MEDIA_BASE_PATH || path.resolve(process.cwd(), "../../apps/export-processor/data");
 const EXPORTS_DIR = path.join(MEDIA_BASE_PATH, "exports");
 
 export async function POST(request: Request) {
@@ -22,12 +22,17 @@ export async function POST(request: Request) {
 		const config = result.data;
 
 		// Verify sources exist
+		const sourcesDir = path.join(MEDIA_BASE_PATH, "sources");
 		for (const source of config.sources) {
+			// If filePath is absolute, use it directly; otherwise resolve against sources dir
+			const absPath = path.isAbsolute(source.filePath)
+				? source.filePath
+				: path.join(sourcesDir, source.filePath);
 			try {
-				await fs.access(source.filePath);
+				await fs.access(absPath);
 			} catch {
 				return NextResponse.json(
-					{ error: `Source file not found: ${source.filePath}` },
+					{ error: `Source file not found: ${absPath}` },
 					{ status: 400 },
 				);
 			}
@@ -38,8 +43,10 @@ export async function POST(request: Request) {
 		await fs.mkdir(jobDir, { recursive: true });
 
 		// Ensure output directory exists
-		const outputDir = path.dirname(config.output.filePath);
-		await fs.mkdir(outputDir, { recursive: true });
+		const outputPath = path.isAbsolute(config.output.filePath)
+			? config.output.filePath
+			: path.join(MEDIA_BASE_PATH, config.output.filePath);
+		await fs.mkdir(path.dirname(outputPath), { recursive: true });
 
 		// Write config
 		await fs.writeFile(

@@ -4,7 +4,7 @@ import { ExportConfigSchema } from "@opencut/export-config";
 import { processExportJob } from "./processor";
 import { readStatus } from "./status";
 
-const MEDIA_BASE_PATH = process.env.MEDIA_BASE_PATH || "/data/media";
+const MEDIA_BASE_PATH = process.env.MEDIA_BASE_PATH || path.resolve("apps/export-processor/data");
 const EXPORTS_DIR = path.join(MEDIA_BASE_PATH, "exports");
 const POLL_INTERVAL_MS = parseInt(process.env.POLL_INTERVAL_MS || "3000", 10);
 
@@ -43,7 +43,7 @@ async function processJob(jobDir: string): Promise<void> {
 		const config = ExportConfigSchema.parse(parsed);
 
 		console.log(`[export] Processing job ${config.id}: ${config.projectName}`);
-		await processExportJob(config, jobDir);
+		await processExportJob(config, jobDir, MEDIA_BASE_PATH);
 	} catch (error) {
 		console.error(`[export] Failed to process job in ${jobDir}:`, error);
 	}

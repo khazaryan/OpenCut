@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM oven/bun:1.3 AS base
 
 # Install FFmpeg
 RUN apt-get update && \
@@ -8,20 +8,19 @@ RUN apt-get update && \
 
 WORKDIR /app
 
-# Copy workspace root for monorepo resolution
+# Copy monorepo root files for workspace resolution
 COPY package.json bun.lock ./
-COPY packages/export-config/ ./packages/export-config/
+COPY packages/export-config/package.json ./packages/export-config/
 COPY apps/export-processor/package.json ./apps/export-processor/
 
 # Install dependencies
-RUN npm install --prefix apps/export-processor --production
+RUN bun install --frozen-lockfile
 
-# Copy processor source
+# Copy source code
+COPY packages/export-config/ ./packages/export-config/
 COPY apps/export-processor/ ./apps/export-processor/
-
-WORKDIR /app/apps/export-processor
 
 # Health marker
 RUN touch /tmp/processor-healthy
 
-CMD ["node", "--loader", "tsx", "src/index.ts"]
+CMD ["bun", "run", "apps/export-processor/src/index.ts"]

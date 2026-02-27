@@ -1,0 +1,5 @@
+# Ignore all media files but keep directory structure
+sources/*
+exports/*
+!sources/.gitkeep
+!exports/.gitkeep

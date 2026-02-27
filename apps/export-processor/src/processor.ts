@@ -8,8 +8,10 @@ import { writeStatus } from "./status";
 export async function processExportJob(
 	config: ExportConfig,
 	jobDir: string,
+	mediaBasePath: string,
 ): Promise<void> {
 	const { sources, segments, output } = config;
+	const sourcesDir = path.join(mediaBasePath, "sources");
 
 	await writeStatus(jobDir, {
 		jobId: config.id,
@@ -45,7 +47,9 @@ export async function processExportJob(
 				"-y",
 				"-ss", String(seg.startTime),
 				"-to", String(seg.endTime),
-				"-i", source.filePath,
+				"-i", path.isAbsolute(source.filePath)
+					? source.filePath
+					: path.join(sourcesDir, source.filePath),
 				"-c", "copy",
 				...(seg.audioFromSource ? [] : ["-an"]),
 				"-avoid_negative_ts", "make_zero",
@@ -70,13 +74,17 @@ export async function processExportJob(
 		});
 
 		// Step 3: Concatenate
+		const outputFilePath = path.isAbsolute(output.filePath)
+			? output.filePath
+			: path.join(mediaBasePath, output.filePath);
+		await fs.mkdir(path.dirname(outputFilePath), { recursive: true });
 		const concatArgs = [
 			"-y",
 			"-f", "concat",
 			"-safe", "0",
 			"-i", concatListPath,
 			"-c", "copy",
-			output.filePath,
+			outputFilePath,
 		];
 
 		await runFFmpeg(concatArgs);
