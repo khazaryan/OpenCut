@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import useDeepCompareEffect from "use-deep-compare-effect";
 import { useEditor } from "@/hooks/use-editor";
 import { useRafLoop } from "@/hooks/use-raf-loop";
@@ -16,6 +16,7 @@ import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu";
 import { usePreviewStore } from "@/stores/preview-store";
 import { PreviewContextMenu } from "./context-menu";
 import { PreviewToolbar } from "./toolbar";
+import { MulticamPreview } from "./multicam-preview";
 
 function usePreviewSize() {
 	const editor = useEditor();
@@ -30,25 +31,66 @@ function usePreviewSize() {
 export function PreviewPanel() {
 	const containerRef = useRef<HTMLDivElement>(null);
 	const { isFullscreen, toggleFullscreen } = useFullscreen({ containerRef });
+	const editor = useEditor();
+	const showGrid = editor.multicam.isGridVisible();
 
 	return (
 		<div
 			ref={containerRef}
 			className="panel bg-background relative flex size-full min-h-0 min-w-0 flex-col rounded-sm border"
 		>
-			<div className="flex min-h-0 min-w-0 flex-1 items-center justify-center p-2 pb-0">
-				<PreviewCanvas
-					onToggleFullscreen={toggleFullscreen}
-					containerRef={containerRef}
-				/>
-				<RenderTreeController />
-			</div>
-			<PreviewToolbar
-				isFullscreen={isFullscreen}
-				onToggleFullscreen={toggleFullscreen}
-			/>
+			{showGrid ? (
+				<>
+					<MulticamPreview />
+					<PreviewToolbar
+						isFullscreen={isFullscreen}
+						onToggleFullscreen={toggleFullscreen}
+					/>
+				</>
+			) : (
+				<>
+					<div className="flex min-h-0 min-w-0 flex-1 items-center justify-center p-2 pb-0">
+						<PreviewCanvas
+							onToggleFullscreen={toggleFullscreen}
+							containerRef={containerRef}
+						/>
+						<RenderTreeController />
+						<MulticamPlaybackSync />
+					</div>
+					<PreviewToolbar
+						isFullscreen={isFullscreen}
+						onToggleFullscreen={toggleFullscreen}
+					/>
+				</>
+			)}
 		</div>
 	);
+}
+
+function MulticamPlaybackSync() {
+	const editor = useEditor();
+	const lastAngleRef = useRef<string | null>(null);
+
+	useEffect(() => {
+		if (!editor.multicam.isInMulticamMode()) return;
+
+		const onTime = (e: Event) => {
+			const time = (e as CustomEvent).detail?.time;
+			if (time == null) return;
+
+			const activeTrackId = editor.multicam.getActiveTrackId({ time });
+			if (activeTrackId !== lastAngleRef.current) {
+				lastAngleRef.current = activeTrackId;
+				// Force re-render of RenderTreeController by notifying multicam listeners
+				editor.multicam.notify();
+			}
+		};
+
+		window.addEventListener("playback-update", onTime);
+		return () => window.removeEventListener("playback-update", onTime);
+	}, [editor]);
+
+	return null;
 }
 
 function RenderTreeController() {
@@ -58,6 +100,20 @@ function RenderTreeController() {
 	const activeProject = editor.project.getActive();
 
 	const { width, height } = usePreviewSize();
+
+	// Compute which multicam tracks to exclude (all except the active angle)
+	const multicamTrackIds = editor.multicam.getMulticamTrackIds();
+	const activeTrackId = editor.multicam.getActiveTrackId({
+		time: editor.playback.getCurrentTime(),
+	});
+	const excludeTrackIds = useMemo(() => {
+		if (multicamTrackIds.size === 0) return undefined;
+		const exclude = new Set<string>();
+		for (const id of multicamTrackIds) {
+			if (id !== activeTrackId) exclude.add(id);
+		}
+		return exclude.size > 0 ? exclude : undefined;
+	}, [multicamTrackIds, activeTrackId]);
 
 	useDeepCompareEffect(() => {
 		if (!activeProject) return;
@@ -70,10 +126,11 @@ function RenderTreeController() {
 			canvasSize: { width, height },
 			background: activeProject.settings.background,
 			isPreview: true,
+			excludeTrackIds,
 		});
 
 		editor.renderer.setRenderTree({ renderTree });
-	}, [tracks, mediaAssets, activeProject?.settings.background, width, height]);
+	}, [tracks, mediaAssets, activeProject?.settings.background, width, height, excludeTrackIds]);
 
 	return null;
 }

@@ -90,6 +90,10 @@ export interface VideoElement extends BaseTimelineElement {
 	transform: Transform;
 	opacity: number;
 	blendMode?: BlendMode;
+	/** If this element was created from a multicam clip, references the clip */
+	multicamClipId?: string;
+	/** If this element was created from a multicam clip, references the angle */
+	multicamAngleId?: string;
 }
 
 export interface ImageElement extends BaseTimelineElement {

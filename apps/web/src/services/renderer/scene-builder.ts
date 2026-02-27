@@ -20,16 +20,19 @@ export type BuildSceneParams = {
 	duration: number;
 	background: TBackground;
 	isPreview?: boolean;
+	excludeTrackIds?: Set<string>;
 };
 
 export function buildScene(params: BuildSceneParams) {
-	const { tracks, mediaAssets, duration, canvasSize, background } = params;
+	const { tracks, mediaAssets, duration, canvasSize, background, excludeTrackIds } = params;
 
 	const rootNode = new RootNode({ duration });
 	const mediaMap = new Map(mediaAssets.map((m) => [m.id, m]));
 
 	const visibleTracks = tracks.filter(
-		(track) => !("hidden" in track && track.hidden),
+		(track) =>
+			!("hidden" in track && track.hidden) &&
+			!(excludeTrackIds && excludeTrackIds.has(track.id)),
 	);
 
 	const orderedTracksTopToBottom = [

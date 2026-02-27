@@ -7,7 +7,8 @@ export type TActionCategory =
 	| "selection"
 	| "history"
 	| "timeline"
-	| "controls";
+	| "controls"
+	| "multicam";
 
 export interface TActionDefinition {
 	description: string;
@@ -136,6 +137,47 @@ export const ACTIONS = {
 		description: "Redo",
 		category: "history",
 		defaultShortcuts: ["ctrl+shift+z", "ctrl+y"],
+	},
+	"enter-multicam-mode": {
+		description: "Enter multicam editing mode",
+		category: "multicam",
+	},
+	"exit-multicam-mode": {
+		description: "Exit multicam editing mode",
+		category: "multicam",
+		defaultShortcuts: ["escape"],
+	},
+	"multicam-switch-angle-1": {
+		description: "Switch to multicam angle 1",
+		category: "multicam",
+		defaultShortcuts: ["1"],
+	},
+	"multicam-switch-angle-2": {
+		description: "Switch to multicam angle 2",
+		category: "multicam",
+		defaultShortcuts: ["2"],
+	},
+	"multicam-switch-angle-3": {
+		description: "Switch to multicam angle 3",
+		category: "multicam",
+		defaultShortcuts: ["3"],
+	},
+	"multicam-switch-angle-4": {
+		description: "Switch to multicam angle 4",
+		category: "multicam",
+		defaultShortcuts: ["4"],
+	},
+	"multicam-start-live-switch": {
+		description: "Start multicam live switching",
+		category: "multicam",
+	},
+	"multicam-stop-live-switch": {
+		description: "Stop multicam live switching",
+		category: "multicam",
+	},
+	"multicam-flatten": {
+		description: "Flatten multicam to timeline",
+		category: "multicam",
 	},
 } as const satisfies Record<string, TActionDefinition>;
 

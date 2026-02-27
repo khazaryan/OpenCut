@@ -111,15 +111,36 @@ export class RendererManager {
 			const exportFps = fps || activeProject.settings.fps;
 			const canvasSize = activeProject.settings.canvasSize;
 
+			const multicamTrackIds = this.editor.multicam.getMulticamTrackIds();
+			const hasMulticam = multicamTrackIds.size > 0;
+
+			// For audio: exclude ALL multicam video tracks to avoid decoding huge files
+			const audioTracks = hasMulticam
+				? tracks.filter((t) => !multicamTrackIds.has(t.id))
+				: tracks;
+
 			let audioBuffer: AudioBuffer | null = null;
 			if (includeAudio) {
 				onProgress?.({ progress: 0.05 });
 				audioBuffer = await createTimelineAudioBuffer({
-					tracks,
+					tracks: audioTracks,
 					mediaAssets,
 					duration,
 				});
 			}
+
+			// For multicam: only include the active angle's track, exclude the rest
+			let getNodeForTime: ((time: number) => ReturnType<typeof buildScene>) | undefined;
+			const firstExclude = hasMulticam
+				? (() => {
+						const activeTrackId = this.editor.multicam.getActiveTrackId({ time: 0 });
+						const exclude = new Set<string>();
+						for (const id of multicamTrackIds) {
+							if (id !== activeTrackId) exclude.add(id);
+						}
+						return exclude.size > 0 ? exclude : undefined;
+					})()
+				: undefined;
 
 			const scene = buildScene({
 				tracks,
@@ -127,7 +148,33 @@ export class RendererManager {
 				duration,
 				canvasSize,
 				background: activeProject.settings.background,
+				excludeTrackIds: firstExclude,
 			});
+
+			if (hasMulticam) {
+				let lastTrackId = this.editor.multicam.getActiveTrackId({ time: 0 });
+				let currentScene = scene;
+
+				getNodeForTime = (time: number) => {
+					const activeTrackId = this.editor.multicam.getActiveTrackId({ time });
+					if (activeTrackId !== lastTrackId) {
+						lastTrackId = activeTrackId;
+						const exclude = new Set<string>();
+						for (const id of multicamTrackIds) {
+							if (id !== activeTrackId) exclude.add(id);
+						}
+						currentScene = buildScene({
+							tracks,
+							mediaAssets,
+							duration,
+							canvasSize,
+							background: activeProject.settings.background,
+							excludeTrackIds: exclude.size > 0 ? exclude : undefined,
+						});
+					}
+					return currentScene;
+				};
+			}
 
 			const exporter = new SceneExporter({
 				width: canvasSize.width,
@@ -157,7 +204,7 @@ export class RendererManager {
 			const cancelInterval = setInterval(checkCancel, 100);
 
 			try {
-				const buffer = await exporter.export({ rootNode: scene });
+				const buffer = await exporter.export({ rootNode: scene, getNodeForTime });
 				clearInterval(cancelInterval);
 
 				if (cancelled) {

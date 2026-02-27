@@ -299,6 +299,23 @@ export class TimelineManager {
 		this.editor.command.execute({ command });
 	}
 
+	setTrackHidden({
+		trackId,
+		hidden,
+	}: {
+		trackId: string;
+		hidden: boolean;
+	}): void {
+		const tracks = this.getTracks();
+		const updatedTracks = tracks.map((track) => {
+			if (track.id !== trackId) return track;
+			if (!("hidden" in track)) return track;
+			if (track.hidden === hidden) return track;
+			return { ...track, hidden } as TimelineTrack;
+		});
+		this.updateTracks(updatedTracks);
+	}
+
 	getTracks(): TimelineTrack[] {
 		return this.editor.scenes.getActiveScene()?.tracks ?? [];
 	}

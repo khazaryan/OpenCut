@@ -77,8 +77,10 @@ export class SceneExporter extends EventEmitter<SceneExporterEvents> {
 
 	async export({
 		rootNode,
+		getNodeForTime,
 	}: {
 		rootNode: RootNode;
+		getNodeForTime?: (time: number) => RootNode;
 	}): Promise<ArrayBuffer | null> {
 		const { fps } = this.renderer;
 		const frameCount = Math.ceil(rootNode.duration * fps);
@@ -122,7 +124,8 @@ export class SceneExporter extends EventEmitter<SceneExporterEvents> {
 			}
 
 			const time = i / fps;
-			await this.renderer.render({ node: rootNode, time });
+			const node = getNodeForTime ? getNodeForTime(time) : rootNode;
+			await this.renderer.render({ node, time });
 			await videoSource.add(time, 1 / fps);
 
 			this.emit("progress", i / frameCount);

@@ -310,4 +310,110 @@ export function useEditorActions() {
 		},
 		undefined,
 	);
+
+	// ─── Multicam Actions ────────────────────────────────────
+
+	useActionHandler(
+		"enter-multicam-mode",
+		() => {
+			const clipId = editor.multicam.getActiveClipId();
+			if (!clipId) {
+				const clips = editor.multicam.getClips();
+				if (clips.length > 0) {
+					editor.multicam.enterMulticamMode({ clipId: clips[0].id });
+				}
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"exit-multicam-mode",
+		() => {
+			if (editor.multicam.isInMulticamMode()) {
+				editor.multicam.exitMulticamMode();
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"multicam-switch-angle-1",
+		() => {
+			if (!editor.multicam.isInMulticamMode()) return;
+			const clip = editor.multicam.getClip({ clipId: editor.multicam.getActiveClipId()! });
+			if (clip && clip.angles[0]) {
+				editor.multicam.switchToAngle({ angleId: clip.angles[0].id });
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"multicam-switch-angle-2",
+		() => {
+			if (!editor.multicam.isInMulticamMode()) return;
+			const clip = editor.multicam.getClip({ clipId: editor.multicam.getActiveClipId()! });
+			if (clip && clip.angles[1]) {
+				editor.multicam.switchToAngle({ angleId: clip.angles[1].id });
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"multicam-switch-angle-3",
+		() => {
+			if (!editor.multicam.isInMulticamMode()) return;
+			const clip = editor.multicam.getClip({ clipId: editor.multicam.getActiveClipId()! });
+			if (clip && clip.angles[2]) {
+				editor.multicam.switchToAngle({ angleId: clip.angles[2].id });
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"multicam-switch-angle-4",
+		() => {
+			if (!editor.multicam.isInMulticamMode()) return;
+			const clip = editor.multicam.getClip({ clipId: editor.multicam.getActiveClipId()! });
+			if (clip && clip.angles[3]) {
+				editor.multicam.switchToAngle({ angleId: clip.angles[3].id });
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"multicam-start-live-switch",
+		() => {
+			if (editor.multicam.isInMulticamMode()) {
+				editor.multicam.startLiveSwitching();
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"multicam-stop-live-switch",
+		() => {
+			if (editor.multicam.isLiveSwitching()) {
+				editor.multicam.stopLiveSwitching();
+			}
+		},
+		undefined,
+	);
+
+	useActionHandler(
+		"multicam-flatten",
+		() => {
+			const clipId = editor.multicam.getActiveClipId();
+			if (clipId) {
+				editor.multicam.flattenToTimeline({ clipId });
+				editor.multicam.exitMulticamMode();
+			}
+		},
+		undefined,
+	);
 }

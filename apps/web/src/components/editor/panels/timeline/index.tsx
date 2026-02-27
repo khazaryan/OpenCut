@@ -54,6 +54,7 @@ import { useEditor } from "@/hooks/use-editor";
 import { useTimelinePlayhead } from "@/hooks/timeline/use-timeline-playhead";
 import { DragLine } from "./drag-line";
 import { invokeAction } from "@/lib/actions";
+import { MulticamTimeline } from "./multicam-timeline";
 
 export function Timeline() {
 	const tracksContainerHeight = { min: 0, max: 800 };
@@ -394,6 +395,13 @@ export function Timeline() {
 										handleRulerTrackingMouseDown={handleRulerMouseDown}
 										handleRulerMouseDown={handlePlayheadRulerMouseDown}
 									/>
+									{editor.multicam.isInMulticamMode() && (
+										<MulticamTimeline
+											pixelsPerSecond={
+												TIMELINE_CONSTANTS.PIXELS_PER_SECOND * zoomLevel
+											}
+										/>
+									)}
 								</div>
 								<TimelinePlayhead
 									zoomLevel={zoomLevel}

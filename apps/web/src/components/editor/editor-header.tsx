@@ -22,21 +22,62 @@ import { useEditor } from "@/hooks/use-editor";
 import { CommandIcon, Logout05Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ShortcutsDialog } from "./dialogs/shortcuts-dialog";
+import { MulticamSetupDialog } from "./dialogs/multicam-setup-dialog";
 import Image from "next/image";
 import { cn } from "@/utils/ui";
 
 export function EditorHeader() {
+	const [isMulticamDialogOpen, setIsMulticamDialogOpen] = useState(false);
+	const editor = useEditor();
+	const isMulticamActive = editor.multicam.isInMulticamMode();
+	const isGridVisible = editor.multicam.isGridVisible();
+
 	return (
-		<header className="bg-background flex h-[3.4rem] items-center justify-between px-3 pt-0.5">
-			<div className="flex items-center gap-1">
-				<ProjectDropdown />
-				<EditableProjectName />
-			</div>
-			<nav className="flex items-center gap-2">
-				<ExportButton />
-				<ThemeToggle />
-			</nav>
-		</header>
+		<>
+			<header className="bg-background flex h-[3.4rem] items-center justify-between px-3 pt-0.5">
+				<div className="flex items-center gap-1">
+					<ProjectDropdown />
+					<EditableProjectName />
+				</div>
+				<nav className="flex items-center gap-2">
+					{isMulticamActive && !isGridVisible ? (
+						<Button
+							variant="outline"
+							size="sm"
+							className="h-8 text-xs"
+							onClick={() => editor.multicam.showGridView()}
+						>
+							Edit Switches
+						</Button>
+					) : (
+						<Button
+							variant="outline"
+							size="sm"
+							className="h-8 text-xs"
+							onClick={() => setIsMulticamDialogOpen(true)}
+						>
+							Multicam
+						</Button>
+					)}
+					{isMulticamActive && (
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-8 text-xs"
+							onClick={() => editor.multicam.exitMulticamMode()}
+						>
+							Exit Multicam
+						</Button>
+					)}
+					<ExportButton />
+					<ThemeToggle />
+				</nav>
+			</header>
+			<MulticamSetupDialog
+				isOpen={isMulticamDialogOpen}
+				onOpenChange={setIsMulticamDialogOpen}
+			/>
+		</>
 	);
 }
 

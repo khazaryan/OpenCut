@@ -1,4 +1,5 @@
 import type { TScene } from "./timeline";
+import type { MulticamClip } from "./multicam";
 
 export type TBackground =
 	| {
@@ -44,6 +45,7 @@ export interface TProject {
 	settings: TProjectSettings;
 	version: number;
 	timelineViewState?: TTimelineViewState;
+	multicamClips?: MulticamClip[];
 }
 
 export type TProjectSortKey = "createdAt" | "updatedAt" | "name" | "duration";
