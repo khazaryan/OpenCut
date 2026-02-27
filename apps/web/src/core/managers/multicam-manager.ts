@@ -383,6 +383,103 @@ export class MulticamManager {
 		return this.state;
 	}
 
+	// ─── Backend Export Config ───────────────────────────────
+
+	generateExportConfig({
+		clipId,
+		format = "mp4",
+		includeAudio = true,
+		mediaBasePath = "/data/media/sources",
+	}: {
+		clipId?: string;
+		format?: "mp4" | "webm";
+		includeAudio?: boolean;
+		mediaBasePath?: string;
+	} = {}): object | null {
+		const resolvedClipId =
+			clipId ?? this.state.activeClipId ?? this.state.clips[0]?.id;
+		if (!resolvedClipId) return null;
+
+		const clip = this.getClip({ clipId: resolvedClipId });
+		if (!clip || clip.switchPoints.length === 0) return null;
+
+		const activeProject = this.editor.project.getActive();
+		const mediaAssets = this.editor.media.getAssets();
+
+		// Build sources from angles
+		const sources = clip.angles.map((angle) => {
+			const asset = mediaAssets.find((a) => a.id === angle.mediaId);
+			return {
+				id: angle.mediaId,
+				name: angle.name,
+				filePath: `${mediaBasePath}/${asset?.name ?? angle.mediaId}`,
+				width: asset?.width,
+				height: asset?.height,
+				duration: asset?.duration,
+				fps: asset?.fps,
+				hasAudio: true,
+			};
+		});
+
+		// Build angle ID → source index map
+		const angleToSourceIndex = new Map<string, number>();
+		clip.angles.forEach((angle, index) => {
+			angleToSourceIndex.set(angle.id, index);
+		});
+
+		// Convert switch points to segments
+		const sortedSwitchPoints = [...clip.switchPoints].sort(
+			(a, b) => a.time - b.time,
+		);
+
+		const segments = [];
+		for (let i = 0; i < sortedSwitchPoints.length; i++) {
+			const sp = sortedSwitchPoints[i];
+			const nextSp = sortedSwitchPoints[i + 1];
+			const angle = clip.angles.find((a) => a.id === sp.angleId);
+			if (!angle) continue;
+
+			const startTime = sp.time;
+			const endTime = nextSp ? nextSp.time : clip.duration;
+			if (endTime - startTime <= 0) continue;
+
+			const sourceIndex = angleToSourceIndex.get(sp.angleId) ?? 0;
+			segments.push({
+				sourceIndex,
+				startTime: startTime + angle.syncOffset,
+				endTime: endTime + angle.syncOffset,
+				audioFromSource: includeAudio,
+			});
+		}
+
+		if (segments.length === 0) return null;
+
+		const exportId = `export-${generateUUID()}`;
+		const outputWidth = activeProject?.settings.canvasSize.width ?? 1920;
+		const outputHeight = activeProject?.settings.canvasSize.height ?? 1080;
+		const outputFps = activeProject?.settings.fps ?? 30;
+
+		return {
+			version: 1,
+			id: exportId,
+			projectId: activeProject?.metadata.id ?? "",
+			projectName: activeProject?.metadata.name ?? "Untitled",
+			createdAt: new Date().toISOString(),
+			sources,
+			segments,
+			output: {
+				filePath: `/data/media/exports/${exportId}/output.${format}`,
+				format,
+				width: outputWidth,
+				height: outputHeight,
+				fps: outputFps,
+				codec: "copy",
+				includeAudio,
+			},
+			status: "pending",
+		};
+	}
+
 	// ─── Flatten to Timeline ─────────────────────────────────
 
 	flattenToTimeline({ clipId }: { clipId: string }): void {

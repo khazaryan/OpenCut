@@ -53,8 +53,9 @@ The browser-based editor handles editing with lightweight proxy files. When the 
 
 ## Related Docs
 
-- [Config JSON Schema](./config-schema.md)
-- [FFmpeg Processing](./ffmpeg-processing.md)
-- [API Endpoints](./api-endpoints.md)
-- [Docker Setup](./docker-setup.md)
-- [Future Roadmap](./roadmap.md)
+- [Technology Decision](./technology-decision.md) — why separate Node.js + FFmpeg service
+- [Config JSON Schema](./config-schema.md) — the JSON format for export jobs
+- [FFmpeg Processing](./ffmpeg-processing.md) — cut + concat strategy
+- [API Endpoints](./api-endpoints.md) — REST API for submitting/polling/downloading
+- [Docker Setup](./docker-setup.md) — containers, shared volume, Dockerfile
+- [Future Roadmap](./roadmap.md) — Phase 1–5 plan

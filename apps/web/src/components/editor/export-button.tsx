@@ -94,7 +94,85 @@ function ExportPopover({
 	const [exportResult, setExportResult] = useState<ExportResult | null>(null);
 	const cancelRequestedRef = useRef(false);
 
-	const handleExport = async () => {
+	const hasMulticam = editor.multicam.getMulticamTrackIds().size > 0;
+
+	const handleBackendExport = async () => {
+		if (!activeProject) return;
+
+		setIsExporting(true);
+		setProgress(0);
+		setExportResult(null);
+
+		try {
+			const config = editor.multicam.generateExportConfig({
+				format,
+				includeAudio,
+			});
+
+			if (!config) {
+				setExportResult({ success: false, error: "No multicam switch points to export" });
+				setIsExporting(false);
+				return;
+			}
+
+			const response = await fetch("/api/export", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify(config),
+			});
+
+			if (!response.ok) {
+				const err = await response.json();
+				setExportResult({ success: false, error: err.error || "Failed to create export job" });
+				setIsExporting(false);
+				return;
+			}
+
+			const { jobId } = await response.json();
+
+			// Poll for status
+			const poll = setInterval(async () => {
+				if (cancelRequestedRef.current) {
+					clearInterval(poll);
+					await fetch(`/api/export/${jobId}`, { method: "DELETE" });
+					setIsExporting(false);
+					setProgress(0);
+					setExportResult(null);
+					return;
+				}
+
+				try {
+					const statusRes = await fetch(`/api/export/${jobId}/status`);
+					const status = await statusRes.json();
+					setProgress(status.progress ?? 0);
+
+					if (status.status === "completed") {
+						clearInterval(poll);
+						setIsExporting(false);
+						// Trigger download
+						window.location.href = `/api/export/${jobId}/download`;
+						onOpenChange(false);
+						setExportResult(null);
+						setProgress(0);
+					} else if (status.status === "failed") {
+						clearInterval(poll);
+						setIsExporting(false);
+						setExportResult({ success: false, error: status.error || "Export failed" });
+					}
+				} catch {
+					// Ignore transient poll errors
+				}
+			}, 2000);
+		} catch (error) {
+			setIsExporting(false);
+			setExportResult({
+				success: false,
+				error: error instanceof Error ? error.message : "Unknown error",
+			});
+		}
+	};
+
+	const handleClientExport = async () => {
 		if (!activeProject) return;
 
 		cancelRequestedRef.current = false;
@@ -142,6 +220,8 @@ function ExportPopover({
 			setProgress(0);
 		}
 	};
+
+	const handleExport = hasMulticam ? handleBackendExport : handleClientExport;
 
 	const handleCancel = () => {
 		cancelRequestedRef.current = true;
