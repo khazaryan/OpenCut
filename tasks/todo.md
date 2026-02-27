@@ -18,6 +18,7 @@
 - [x] Create `apps/export-processor/src/progress.ts` — parse FFmpeg stderr for progress %
 - [x] Create `apps/export-processor/src/status.ts` — read/write status.json
 - [x] Verify: `bunx tsc --noEmit` passes (exit 0)
+- [x] Verify: local test with `bun run` — processed test config, produced output.mp4 (369KB, H.264, 30fps)
 
 ## Phase 3: API Routes ✅
 
@@ -58,10 +59,17 @@
 - Web app dev server: compiles and serves correctly
 - `bun install`: all workspace deps resolve
 
-### Not yet verified (needs Docker + test files)
-- Full end-to-end: POST config → FFmpeg processes → download result
+### Verified locally (2026-02-27)
+- ✅ Processor picks up pending jobs from exports directory
+- ✅ FFmpeg cuts 3 segments from 2 source files (blue/red test videos)
+- ✅ Concatenates into single output.mp4 (369KB, 1280x720, H.264, 30fps)
+- ✅ status.json updated to "completed" with downloadUrl
+- ✅ Temp segment files cleaned up
+
+### Not yet verified
 - Docker compose up with both containers + shared volume
-- curl test of API routes with real config JSON
+- curl test of API routes (POST → status → download)
+- Full browser flow (multicam edit → export button → backend)
 
 ### Architecture decisions
 - See `docs/backend-export/technology-decision.md`
