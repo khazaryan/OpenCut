@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import fs from "node:fs/promises";
+import { createReadStream } from "node:fs";
 import path from "node:path";
 import { EXPORTS_DIR, MEDIA_BASE_PATH } from "@/lib/export-paths";
 
@@ -44,18 +45,29 @@ export async function GET(
 			);
 		}
 
-		const outputPath = config.output.filePath;
+		const outputPath = path.isAbsolute(config.output.filePath)
+			? config.output.filePath
+			: path.join(MEDIA_BASE_PATH, config.output.filePath);
 
 		try {
 			const stat = await fs.stat(outputPath);
-			const fileBuffer = new Uint8Array(await fs.readFile(outputPath));
 
 			const mimeType =
 				config.output.format === "webm" ? "video/webm" : "video/mp4";
 			const extension = config.output.format === "webm" ? ".webm" : ".mp4";
 			const filename = `${config.projectName}${extension}`;
 
-			return new NextResponse(fileBuffer, {
+			// Stream the file instead of reading into memory (files can be 10GB+)
+			const stream = createReadStream(outputPath);
+			const webStream = new ReadableStream({
+				start(controller) {
+					stream.on("data", (chunk) => controller.enqueue(new Uint8Array(Buffer.from(chunk))));
+					stream.on("end", () => controller.close());
+					stream.on("error", (err) => controller.error(err));
+				},
+			});
+
+			return new NextResponse(webStream, {
 				headers: {
 					"Content-Type": mimeType,
 					"Content-Disposition": `attachment; filename="${filename}"`,
