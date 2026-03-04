@@ -16,7 +16,7 @@ The export config is a JSON file that describes exactly how to cut and join sour
     {
       "id": "media-001",
       "name": "Camera 1 - Wide",
-      "filePath": "/data/media/camera1_wide.mp4",
+      "filePath": "camera1_wide.mp4",
       "width": 3840,
       "height": 2160,
       "duration": 3600.5,
@@ -26,7 +26,7 @@ The export config is a JSON file that describes exactly how to cut and join sour
     {
       "id": "media-002",
       "name": "Camera 2 - Close",
-      "filePath": "/data/media/camera2_close.mp4",
+      "filePath": "camera2_close.mp4",
       "width": 3840,
       "height": 2160,
       "duration": 3600.5,
@@ -36,7 +36,7 @@ The export config is a JSON file that describes exactly how to cut and join sour
     {
       "id": "media-003",
       "name": "Camera 3 - Guest",
-      "filePath": "/data/media/camera3_guest.mp4",
+      "filePath": "camera3_guest.mp4",
       "width": 3840,
       "height": 2160,
       "duration": 3600.5,
@@ -67,7 +67,7 @@ The export config is a JSON file that describes exactly how to cut and join sour
   ],
 
   "output": {
-    "filePath": "/data/media/exports/export-abc123.mp4",
+    "filePath": "exports/export-abc123/output.mp4",
     "format": "mp4",
     "width": 3840,
     "height": 2160,
@@ -102,7 +102,7 @@ The export config is a JSON file that describes exactly how to cut and join sour
 |-------|------|-------------|
 | `id` | `string` | Media asset ID from the editor. |
 | `name` | `string` | Display name of the source file. |
-| `filePath` | `string` | Absolute path to the source file on the server. Phase 2: S3 URL. |
+| `filePath` | `string` | Filename of the source file (e.g. `"Studio CAM 1.mp4"`). Server resolves against `MEDIA_BASE_PATH/sources/`. Absolute paths also accepted. |
 | `width` | `number` | Source video width in pixels. |
 | `height` | `number` | Source video height in pixels. |
 | `duration` | `number` | Source video duration in seconds. |
@@ -126,7 +126,7 @@ Segments are **ordered** — they are concatenated in the order they appear in t
 
 | Field | Type | Description |
 |-------|------|-------------|
-| `filePath` | `string` | Absolute path where the output file will be written. |
+| `filePath` | `string` | Relative path for the output file (e.g. `"exports/{jobId}/output.mp4"`). Server resolves against `MEDIA_BASE_PATH`. Absolute paths also accepted. |
 | `format` | `string` | Output container format: `"mp4"` or `"webm"`. |
 | `width` | `number` | Output width in pixels. |
 | `height` | `number` | Output height in pixels. |

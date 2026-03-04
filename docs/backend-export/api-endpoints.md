@@ -40,12 +40,12 @@ Submit a new export job.
 ```
 
 **What it does:**
-1. Validates the config JSON
-2. Verifies source files exist on disk
-3. Creates the export working directory (`/data/media/exports/{jobId}/`)
-4. Writes the config to disk
-5. Triggers FFmpeg processing
-6. Returns job ID for status polling
+1. Validates the config JSON against Zod schema (`@opencut/export-config`)
+2. Resolves source `filePath` values against `MEDIA_BASE_PATH/sources/` (plain filenames) or uses them directly (absolute paths)
+3. Verifies source files exist on disk via `fs.access()`
+4. Creates the export working directory (`{MEDIA_BASE_PATH}/exports/{jobId}/`)
+5. Writes `config.json` and `status.json` (pending) to the job directory
+6. Returns job ID — the processor polls for pending jobs and picks them up
 
 ---
 
@@ -131,22 +131,38 @@ Cancel a running export or clean up a completed one.
 
 ---
 
+## Path Resolution
+
+All API routes import `MEDIA_BASE_PATH`, `EXPORTS_DIR`, and `SOURCES_DIR` from `apps/web/src/lib/export-paths.ts`.
+
+`MEDIA_BASE_PATH` defaults to `{project_root}/apps/export-processor/data`. Override via `MEDIA_BASE_PATH` env var.
+
+The `findProjectRoot()` function walks up from `process.cwd()` looking for a `package.json` with `workspaces` to handle the fact that Next.js runs from `apps/web/`, not the monorepo root.
+
+**Source file resolution:**
+- Relative path (e.g. `"Studio CAM 1.mp4"`) → `{MEDIA_BASE_PATH}/sources/Studio CAM 1.mp4`
+- Absolute path (e.g. `"/mnt/s3/file.mp4"`) → used as-is
+
+**Output file resolution:**
+- Relative path (e.g. `"exports/{jobId}/output.mp4"`) → `{MEDIA_BASE_PATH}/exports/{jobId}/output.mp4`
+- Absolute path → used as-is
+
 ## File Structure on Server
 
 ```
-/data/media/
-  camera1_wide.mp4          # Source files
-  camera2_close.mp4
-  camera3_guest.mp4
-  exports/
-    export-abc123/
-      config.json            # The export config
-      segment_0.mp4          # Temporary cut segments
-      segment_1.mp4
-      segment_2.mp4
-      concat_list.txt        # FFmpeg concat input file
-      output.mp4             # Final output (after concat)
-      status.json            # Current job status + progress
+apps/export-processor/data/        # MEDIA_BASE_PATH
+├── sources/
+│   ├── camera1_wide.mp4            # Source files (user drops here)
+│   ├── camera2_close.mp4
+│   └── camera3_guest.mp4
+└── exports/
+    └── export-abc123/
+        ├── config.json             # The export config
+        ├── status.json             # Current job status + progress
+        ├── segment_0.mp4           # Temporary (cleaned up after concat)
+        ├── segment_1.mp4
+        ├── concat_list.txt         # Temporary (cleaned up after concat)
+        └── output.mp4              # Final output
 ```
 
 ## Frontend Flow
@@ -155,7 +171,6 @@ Cancel a running export or clean up a completed one.
 // 1. Generate config from multicam state
 const config = editor.multicam.generateExportConfig({
   format: "mp4",
-  quality: "high",
   includeAudio: true,
 });
 

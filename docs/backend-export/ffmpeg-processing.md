@@ -21,10 +21,10 @@ For each segment in the config, extract the portion from the source file:
 ffmpeg -y \
   -ss {startTime} \
   -to {endTime} \
-  -i {source.filePath} \
+  -i {MEDIA_BASE_PATH}/sources/{source.filePath} \
   -c copy \
   -avoid_negative_ts make_zero \
-  /data/media/exports/{jobId}/segment_{index}.mp4
+  {MEDIA_BASE_PATH}/exports/{jobId}/segment_{index}.mp4
 ```
 
 **Flags:**
@@ -38,9 +38,9 @@ ffmpeg -y \
 Write a temporary text file listing all segments in order:
 
 ```
-file '/data/media/exports/job-123/segment_0.mp4'
-file '/data/media/exports/job-123/segment_1.mp4'
-file '/data/media/exports/job-123/segment_2.mp4'
+file '{MEDIA_BASE_PATH}/exports/{jobId}/segment_0.mp4'
+file '{MEDIA_BASE_PATH}/exports/{jobId}/segment_1.mp4'
+file '{MEDIA_BASE_PATH}/exports/{jobId}/segment_2.mp4'
 ```
 
 ### Step 3: Concatenate segments
@@ -49,9 +49,9 @@ file '/data/media/exports/job-123/segment_2.mp4'
 ffmpeg -y \
   -f concat \
   -safe 0 \
-  -i /data/media/exports/{jobId}/concat_list.txt \
+  -i {MEDIA_BASE_PATH}/exports/{jobId}/concat_list.txt \
   -c copy \
-  /data/media/exports/{jobId}/output.mp4
+  {MEDIA_BASE_PATH}/exports/{jobId}/output.mp4
 ```
 
 ### Step 4: Cleanup
@@ -119,3 +119,15 @@ For 4K H.264 podcast files with stream copy:
 | Total export (1 hour podcast, 20 switches) | 30–60 seconds |
 
 Re-encoding (if needed) would take 10–30x longer depending on hardware.
+
+### Verified Benchmarks (Feb 2026)
+
+Tested on local machine with 1080p H.264 source files:
+
+| Test | Sources | Segments | Output | Speed |
+|------|---------|----------|--------|-------|
+| Synthetic | 2× 10s test videos | 3 | 369KB, 30fps | instant |
+| Studio CAMs | 2× 11GB (52min) | 3 | 327MB, 1:32 | ~300x |
+| Full session | 3× cameras (28GB) | 155 | 9.5GB, 1:11:07 | ~80x concat |
+
+The full 155-segment session completed in ~2 minutes total (cutting + concatenation).
